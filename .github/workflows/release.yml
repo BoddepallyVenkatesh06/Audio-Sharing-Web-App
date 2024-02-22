@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apply_version:
+    name: Apply Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: git pull
+      - run: |
+          bash ./scripts/apply_version.sh
+      - run: |
+          git config user.name mkckr0
+          git config user.email 26296627+mkckr0@users.noreply.github.com
+          if [ -z "$(git status -s)" ]; then exit 0; fi
+          git add .
+          git commit -m "Apply version $(bash ./scripts/get_version.sh -n)"
+          git push
+
+  build_app:
+    name: Build Android App
+    needs: [apply_version]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - uses: actions/checkout@v3
+      - run: git pull
+      - uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Create relese.jks
+        run: mkdir ~/.android && echo "$release_jks" | base64 -d > ~/.android/release.jks
+        env:
+          release_jks: ${{ secrets.RELEASE_JKS }}
+      - name: Create keystore.properties
+        run: echo -e "storeFile=$(ls ~/.android/release.jks)\nstorePassword=${store_pass}\nkeyAlias=${key_alias}\nkeyPassword=${key_pass}\n" > keystore.properties
+        env:
+          store_pass: ${{ secrets.STORE_PASS }}
+          key_alias: ${{ secrets.KEY_ALIAS }}
+          key_pass: ${{ secrets.KEY_PASS }}
+
+      - run: chmod +x gradlew
+      - run: ./gradlew :app:assembleRelease
+      - run: ./gradlew :app:signingReport
+
+      - name: Checksum
+        run: cd app/build/outputs/apk/release/ && sha256sum *.apk | tee $(ls *.apk).sha256
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: |
+            android-app/app/build/outputs/apk/release/*.apk
+            android-app/app/build/outputs/apk/release/*.sha256
+
+  build_server_mfc:
+    name: Build server-mfc
+    needs: [apply_version]
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: server-mfc
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-windows-static-md
+    steps:
+      - uses: actions/checkout@v3
+      - run: git pull
+      - uses: microsoft/setup-msbuild@v1
+      - uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: e57b2167e66c847f991bd6bce1355b85acd944e8
+      - run: vcpkg integrate install
+      - run: vcpkg install asio protobuf spdlog
+      - run: msbuild /m /p:Configuration=Release,Platform=x64
+      - name: Checksum
+        run: cd x64/Release/ && sha256sum *.exe | tee $(ls *.exe).sha256
+        shell: bash
+      - uses: actions/upload-artifact@v3
+        with:
+          name: server-mfc
+          path: |
+            server-mfc/x64/Release/*.exe
+            server-mfc/x64/Release/*.sha256
+
+  build_server_core:
+    name: Build server-core
+    needs: [apply_version]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            vcpkg_triplet: x64-windows-static-md
+            cmake_preset: windows-Release
+            platform: windows
+          - os: ubuntu-latest
+            vcpkg_triplet: x64-linux
+            cmake_preset: linux-Release
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: server-core
+    env:
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.vcpkg_triplet }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: git pull
+      - name: Install Linux Deps
+        run: sudo apt install libpipewire-0.3-dev
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - uses: lukka/get-cmake@latest
+      - uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: e57b2167e66c847f991bd6bce1355b85acd944e8
+      - run: vcpkg integrate install
+      - run: vcpkg install asio protobuf spdlog cxxopts
+      - uses: lukka/run-cmake@v10
+        with:
+          cmakeListsTxtPath: ${{ github.workspace }}/server-core/CMakeLists.txt
+          configurePreset: ${{ matrix.cmake_preset }}
+          buildPreset: ${{ matrix.cmake_preset }}
+      - name: Pack
+        run: bash pack.sh ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: server-core-${{ matrix.platform }}
+          path: |
+            server-core/out/install/*.sha256
+            server-core/out/install/*.tar.gz
+            server-core/out/install/*.zip
+
+  create_release:
+    name: Create Release
+    needs: [build_app, build_server_mfc, build_server_core]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - run: git pull
+      - run: chmod +x ./scripts/get_version.sh
+      - uses: actions/download-artifact@v3
+        with:
+          path: release_bin
+      - name: Generate release notes
+        run: 'echo -e "$(cat ./metadata/en-US/changelogs/$(bash ./scripts/get_version.sh -c).txt)" > notes'
+        env:
+          app_hash: ${{ needs.build_app.outputs.hash }}
+          server_hash: ${{ needs.build_server.outputs.hash }}
+      - name: Create Github Release
+        run: |
+          version=$(bash ./scripts/get_version.sh -n)
+          gh release create "v$version" -d -F notes -t "v$version" release_bin/*/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

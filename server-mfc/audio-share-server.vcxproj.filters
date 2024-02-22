@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="res">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="protos">
+      <UniqueIdentifier>{94d4e31b-5c0c-42d3-a25d-1112166d6b9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mfc">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{6d6c92e5-a2ca-4cdf-b769-4ce21d5da55c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pb">
+      <UniqueIdentifier>{35fa908a-04fb-4a4b-935a-a786e97f9720}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core\win32">
+      <UniqueIdentifier>{ea996a12-e14f-4199-b10f-89b867c96785}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AudioShareServer.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioShareServerDlg.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>mfc</Filter>
+    </ClInclude>
+    <ClInclude Include="client.pb.h">
+      <Filter>pb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\server-core\src\audio_manager.hpp">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\server-core\src\formatter.hpp">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\server-core\src\network_manager.hpp">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\server-core\src\win32\audio_manager_impl.hpp">
+      <Filter>core\win32</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AudioShareServer.cpp">
+      <Filter>mfc</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioShareServerDlg.cpp">
+      <Filter>mfc</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>mfc</Filter>
+    </ClCompile>
+    <ClCompile Include="client.pb.cc">
+      <Filter>pb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\server-core\src\audio_manager.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\server-core\src\network_manager.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\server-core\src\win32\audio_manager_impl.cpp">
+      <Filter>core\win32</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AudioShareServer.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\AudioShareServer.rc2">
+      <Filter>res</Filter>
+    </None>
+    <None Include="settings.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\AudioShareServer.ico">
+      <Filter>res</Filter>
+    </Image>
+    <Image Include="res\refresh.png">
+      <Filter>res</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\protos\client.proto">
+      <Filter>protos</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>
